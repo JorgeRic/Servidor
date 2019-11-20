@@ -1,0 +1,74 @@
+ type Cliente{
+    id: ID
+    nombre: String
+    apellido: String
+    empresa: String
+    emails: [Email]
+    edad: Int
+    tipo: tipoCliente
+    pedidos: [Pedido]
+  }
+  type Producto{
+    id: ID
+    nombre: String
+    precio: Int
+    stock: Int
+  }
+  """ Asigna la categoria del cliente """
+  enum tipoCliente{
+    BASICO
+    PREMIUM
+  }
+  type Email{
+    email: String
+  }
+  type Pedido{
+    producto: String
+    precio: Int
+  }
+  type Query{
+    #Clientes
+    getClientes(limite: Int, offset: Int): [Cliente]
+    getCliente(id: ID): Cliente
+    totalClientes: String
+    #Productos
+    getProductos(limite: Int, offset: Int): [Producto]
+    getProducto(id:ID!): Producto
+    totalProductos: String
+  }
+  input EmailInput{
+    email: String
+  }
+  input PedidoInput{
+    producto: String
+    precio: Int
+  }
+  """ Campos para los clientes nuevos """
+  input ClienteInput{
+    id: ID
+    nombre: String!
+    apellido: String!
+    empresa: String!
+    edad: Int!
+    tipo: tipoCliente!
+    pedidos: [PedidoInput]
+    emails: [EmailInput]
+  }
+  input ProductoInput{
+    id: ID
+    nombre: String!
+    precio: Int!
+    #Con decimales Float
+    stock: Int
+  }
+  type Mutation{
+    #Creamos, actualizamos y eliminamos
+    #Clientes
+    crearCliente(input: ClienteInput): Cliente
+    actualizarCliente(input: ClienteInput): Cliente
+    eliminarCliente(id: ID!) : String
+    #Productos
+    nuevoProducto(input: ProductoInput): Producto
+    actualizarProducto(input: ProductoInput): Producto
+    eliminarProducto(id: ID!) : String
+  }
