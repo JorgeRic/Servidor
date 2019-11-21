@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { Clientes, Productos } from './db'
+import { Clientes, Productos, Pedidos } from './db'
 import { rejects } from 'assert';
 
 export const resolvers = {
@@ -23,8 +23,13 @@ export const resolvers = {
         })
       })
     },
-    getProductos: (root, {limite, offset})  =>{
-      return Productos.find({}).limit(limite).skip(offset)
+    getProductos: (root, {limite, offset, stock})  =>{
+      //tilizamos $gt para que nos devuelva los elementos igual o mayores a un valor
+      let filtro;
+      if(stock){
+        filtro = { stock: {$gt: 0} }
+      }
+      return Productos.find(filtro).limit(limite).skip(offset)
     },
     getProducto: (root, {id})=>{
       return new Promise((resolve, object) =>{
@@ -110,6 +115,31 @@ export const resolvers = {
           else resolve("Producto eliminado de la base de datos")
          })
        })
-     }
+     },
+     nuevoPedido : (root, {input}) =>{
+      const nuevoPedido = new Pedidos({
+        pedido: input.pedido,
+        total: input.total,
+        fecha: new Date(),
+        cliente: input.cliente,
+        estado: "PENDIENTE"
+      })
+      nuevoPedido.id = nuevoPedido._id
+      return new Promise((resolve, object) => {
+        //Actualizamos la cantidad de productos
+        input.pedido.forEach(pedido => {
+          Productos.updateOne({_id : pedido.id},
+            //$inc es un metodo de mongo para ampliaro reducir cantidades
+            { "$inc" : {"stock" : -pedido.cantidad}
+          }, function (error){
+            if (error) return new Error(error)
+          })
+        })
+        nuevoPedido.save((error) => {
+          if(error) rejects(error)
+          else resolve(nuevoPedido)
+        })
+      })
+     },
   }
 }

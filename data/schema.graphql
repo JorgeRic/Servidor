@@ -6,7 +6,6 @@
     emails: [Email]
     edad: Int
     tipo: tipoCliente
-    pedidos: [Pedido]
   }
   type Producto{
     id: ID
@@ -14,7 +13,24 @@
     precio: Int
     stock: Int
   }
+  type Pedido{
+    id: ID
+    pedido: [PedidoProducto]
+    total: Int
+    fecha: String
+    cliente: ID
+    estado: estadoPedido
+  }
+  type PedidoProducto{
+    id: ID
+    cantidad: Int
+  }
   """ Asigna la categoria del cliente """
+  enum estadoPedido{
+    PENDIENTE
+    COMPLETADO
+    CANCELADO
+  }
   enum tipoCliente{
     BASICO
     PREMIUM
@@ -22,26 +38,18 @@
   type Email{
     email: String
   }
-  type Pedido{
-    producto: String
-    precio: Int
-  }
   type Query{
     #Clientes
     getClientes(limite: Int, offset: Int): [Cliente]
     getCliente(id: ID): Cliente
     totalClientes: String
     #Productos
-    getProductos(limite: Int, offset: Int): [Producto]
+    getProductos(limite: Int, offset: Int, stock: Boolean): [Producto]
     getProducto(id:ID!): Producto
     totalProductos: String
   }
   input EmailInput{
     email: String
-  }
-  input PedidoInput{
-    producto: String
-    precio: Int
   }
   """ Campos para los clientes nuevos """
   input ClienteInput{
@@ -61,6 +69,18 @@
     #Con decimales Float
     stock: Int
   }
+  input PedidoInput{
+    id: ID
+    pedido: [PedidoProductoInput]
+    total: Int
+    fecha: String
+    cliente: ID
+    estado: estadoPedido
+  }
+  input PedidoProductoInput{
+    id: ID
+    cantidad: Int
+  }
   type Mutation{
     #Creamos, actualizamos y eliminamos
     #Clientes
@@ -71,4 +91,6 @@
     nuevoProducto(input: ProductoInput): Producto
     actualizarProducto(input: ProductoInput): Producto
     eliminarProducto(id: ID!) : String
+    #Pedidos
+    nuevoPedido(input: PedidoInput): Pedido
   }
