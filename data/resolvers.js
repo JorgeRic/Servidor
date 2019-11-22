@@ -46,6 +46,16 @@ export const resolvers = {
           else resolve(count)
         })
       })
+    },
+    //Lo relacionamos con el cliente
+    //No nos trae todos lod pedidos. Solo los pedidos de un cliente
+    obtenerPedidos:(root, {cliente}) => {
+      return new Promise((resolve, object) => {
+        Pedidos.find({cliente: cliente}, (error, pedido) => {
+          if(error) rejects(error)
+          else resolve(pedido)
+        })
+      })
     }
   },
   Mutation: {
@@ -129,7 +139,7 @@ export const resolvers = {
         //Actualizamos la cantidad de productos
         input.pedido.forEach(pedido => {
           Productos.updateOne({_id : pedido.id},
-            //$inc es un metodo de mongo para ampliaro reducir cantidades
+            //$inc es un metodo de mongo para ampliar o reducir cantidades
             { "$inc" : {"stock" : -pedido.cantidad}
           }, function (error){
             if (error) return new Error(error)
@@ -141,5 +151,31 @@ export const resolvers = {
         })
       })
      },
+     actualizarEstado : (root, {input}) => {
+     return new Promise((resolve, object) => {
+      // const {estado} = input
+      // console.log(estado)
+      // let instruccion;
+      // if(estado === 'COMPLETADO'){
+      //   instruccion = '-'
+      // }else if(estado === 'CANCELADO'){
+      //   instruccion = '+'
+      // }
+      //   input.pedido.forEach(pedido => {
+      //     Productos.updateOne({_id : pedido.id},
+      //       //$inc es un metodo de mongo para ampliaro reducir cantidades
+      //       { "$inc" : 
+      //         {"stock" : `${instruccion}${pedido.cantidad}`}
+      //       }, function (error){
+      //       if (error) return new Error(error)
+      //     })
+      //   })
+        Pedidos.findOneAndUpdate({_id: input.id}, input, {new: true}, (error, producto)=>{
+          if(error) rejects(error)
+          else resolve("Actualizado correctamente")
+        })
+     })
+    },
+   
   }
 }

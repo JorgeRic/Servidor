@@ -47,6 +47,8 @@
     getProductos(limite: Int, offset: Int, stock: Boolean): [Producto]
     getProducto(id:ID!): Producto
     totalProductos: String
+    #Pedidos
+    obtenerPedidos(cliente: String): [Pedido]
   }
   input EmailInput{
     email: String
@@ -93,4 +95,5 @@
     eliminarProducto(id: ID!) : String
     #Pedidos
     nuevoPedido(input: PedidoInput): Pedido
+    actualizarEstado(input: PedidoInput): String
   }
