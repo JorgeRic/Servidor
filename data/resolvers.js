@@ -1,6 +1,18 @@
-import mongoose from 'mongoose'
-import { Clientes, Productos, Pedidos } from './db'
+
+import { Clientes, Productos, Pedidos, Usuarios } from './db'
 import { rejects } from 'assert';
+import bcrypt from 'bcrypt'
+
+import dotenv from 'dotenv'
+dotenv.config({path: 'variables.env'})
+import jwt from 'jsonwebtoken';
+
+const crearToken = (usuarioLogin, secreto, expiresIn) => {
+  const {usuario} = usuarioLogin
+  return (
+    jwt.sign({usuario}, 'secreto', {expiresIn})
+    )
+}
 
 export const resolvers = {
   Query: {
@@ -54,6 +66,46 @@ export const resolvers = {
         Pedidos.find({cliente: cliente}, (error, pedido) => {
           if(error) rejects(error)
           else resolve(pedido)
+        })
+      })
+    },
+    //Relacionar una tabla con otra
+    topClientes: (root) => {
+       return new Promise((resolve, object) => {
+        Pedidos.aggregate([
+          //Se utiliza siempre con el aggregate
+          //Realiza una busqueda y nos devuelve solo los que cumplan la condicion
+            {
+              $match: {estado: "COMPLETADO"}
+            },
+            {
+              //Permite sumar los totales
+              $group: {
+                _id: "$cliente",
+                total: {$sum: "$total"}
+              }
+            },
+            {
+              //$lookup Es como un join. Permite relacionar dos tablas
+              //En este caso pedidos con clientes
+              $lookup: {
+                  from: "clientes",
+                  localField: "_id",
+                  foreignField: "_id",
+                  as: "cliente"
+              }
+            },
+            //Ordena de mayor a menor
+            {
+              $sort: {total: -1}
+            },
+            //creamos un limite de datos a traernos
+            {
+              $limit: 10
+            }         
+        ], (error, resultado) => {
+          if(error) rejects(error)
+          else resolve(resultado)
         })
       })
     }
@@ -136,15 +188,6 @@ export const resolvers = {
       })
       nuevoPedido.id = nuevoPedido._id
       return new Promise((resolve, object) => {
-        //Actualizamos la cantidad de productos
-        input.pedido.forEach(pedido => {
-          Productos.updateOne({_id : pedido.id},
-            //$inc es un metodo de mongo para ampliar o reducir cantidades
-            { "$inc" : {"stock" : -pedido.cantidad}
-          }, function (error){
-            if (error) return new Error(error)
-          })
-        })
         nuevoPedido.save((error) => {
           if(error) rejects(error)
           else resolve(nuevoPedido)
@@ -153,29 +196,53 @@ export const resolvers = {
      },
      actualizarEstado : (root, {input}) => {
      return new Promise((resolve, object) => {
-      // const {estado} = input
-      // console.log(estado)
-      // let instruccion;
-      // if(estado === 'COMPLETADO'){
-      //   instruccion = '-'
-      // }else if(estado === 'CANCELADO'){
-      //   instruccion = '+'
-      // }
-      //   input.pedido.forEach(pedido => {
-      //     Productos.updateOne({_id : pedido.id},
-      //       //$inc es un metodo de mongo para ampliaro reducir cantidades
-      //       { "$inc" : 
-      //         {"stock" : `${instruccion}${pedido.cantidad}`}
-      //       }, function (error){
-      //       if (error) return new Error(error)
-      //     })
-      //   })
+      const {estado} = input
+      console.log(estado)
+      let instruccion;
+      if(estado === 'COMPLETADO'){
+        instruccion = '-'
+      }else if(estado === 'CANCELADO'){
+        instruccion = '+'
+      }
+        input.pedido.forEach(pedido => {
+          Productos.updateOne({_id : pedido.id},
+            //$inc es un metodo de mongo para ampliaro reducir cantidades
+            { "$inc" : 
+              {"stock" : `${instruccion}${pedido.cantidad}`}
+            }, function (error){
+            if (error) return new Error(error)
+          })
+        })
         Pedidos.findOneAndUpdate({_id: input.id}, input, {new: true}, (error, producto)=>{
           if(error) rejects(error)
           else resolve("Actualizado correctamente")
         })
      })
     },
-   
+    crearUsuario:async(root, {usuario, password})=> {
+      const existeUsuario = await Usuarios.findOne({usuario})
+      if(existeUsuario){
+        throw new Error('El usuario ya existe')
+      }
+      const nuevoUsuario = await new Usuarios({
+        usuario,
+        password
+      }).save()
+      return "Creado correctamente"
+    },
+    autentificarUsuario: async(root, {usuario, password}) => {
+      const nombreUsuario = await Usuarios.findOne({usuario})
+      console.log(usuario,'hola')
+      if(!nombreUsuario) {
+        throw new Error('El usuario no existe')
+      }
+      const passwordCorrecto = await bcrypt.compare(password, nombreUsuario.password)
+      if(!passwordCorrecto){
+        throw new Error('Password Incorrecto')
+      }
+      return{
+        token: crearToken(nombreUsuario, process.env.SECRETO, '1hr')
+      }
+    }
+    }
   }
-}

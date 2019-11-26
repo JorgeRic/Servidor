@@ -21,9 +21,16 @@
     cliente: ID
     estado: estadoPedido
   }
+  type Token{
+    token: String!
+  }
   type PedidoProducto{
     id: ID
     cantidad: Int
+  }
+  type ClienteTotal{
+    total: Float
+    cliente: [Cliente]
   }
   """ Asigna la categoria del cliente """
   enum estadoPedido{
@@ -49,6 +56,8 @@
     totalProductos: String
     #Pedidos
     obtenerPedidos(cliente: String): [Pedido]
+    #Graficas
+    topClientes: [ClienteTotal]
   }
   input EmailInput{
     email: String
@@ -96,4 +105,7 @@
     #Pedidos
     nuevoPedido(input: PedidoInput): Pedido
     actualizarEstado(input: PedidoInput): String
+    #Usuarios
+    crearUsuario(usuario: String!, password: String!): String
+    autentificarUsuario(usuario: String!, password: String!): Token
   }
