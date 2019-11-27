@@ -38,6 +38,10 @@
     total: Float
     cliente: [Cliente]
   }
+  type VendedorTotal{
+    total: Float
+    vendedor: [Usuario]
+  }
   """ Asigna la categoria del cliente """
   enum estadoPedido{
     PENDIENTE
@@ -53,9 +57,9 @@
   }
   type Query{
     #Clientes
-    getClientes(limite: Int, offset: Int): [Cliente]
+    getClientes(limite: Int, offset: Int , vendedor: String): [Cliente]
     getCliente(id: ID): Cliente
-    totalClientes: String
+    totalClientes(vendedor: String): String
     #Productos
     getProductos(limite: Int, offset: Int, stock: Boolean): [Producto]
     getProducto(id:ID!): Producto
@@ -64,6 +68,7 @@
     obtenerPedidos(cliente: String): [Pedido]
     #Graficas
     topClientes: [ClienteTotal]
+    topVendedores: [VendedorTotal]
     #Usuarios
     obtenerUsuario: Usuario
   }
@@ -80,6 +85,7 @@
     tipo: tipoCliente!
     pedidos: [PedidoInput]
     emails: [EmailInput]
+    vendedor: ID
   }
   input ProductoInput{
     id: ID
@@ -95,6 +101,7 @@
     fecha: String
     cliente: ID
     estado: estadoPedido
+    vendedor: ID
   }
   input PedidoProductoInput{
     id: ID

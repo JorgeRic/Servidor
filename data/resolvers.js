@@ -1,4 +1,5 @@
-
+import mongoose from 'mongoose'
+const ObjectId = mongoose.Types.ObjectId;
 import { Clientes, Productos, Pedidos, Usuarios } from './db'
 import { rejects } from 'assert';
 import bcrypt from 'bcrypt'
@@ -6,6 +7,7 @@ import bcrypt from 'bcrypt'
 import dotenv from 'dotenv';
 dotenv.config({path: 'variables.env'})
 import jwt from 'jsonwebtoken';
+
 
 const crearToken = (usuarioLogin, secreto, expiresIn) => {
   const {usuario} = usuarioLogin;
@@ -15,8 +17,12 @@ const crearToken = (usuarioLogin, secreto, expiresIn) => {
 
 export const resolvers = {
   Query: {
-    getClientes: (root, {limite, offset})=>{
-      return Clientes.find({}).limit(limite).skip(offset)
+    getClientes: (root, {limite, offset, vendedor})=>{
+      let filtro;
+      if(vendedor){
+        filtro = {vendedor : new ObjectId(vendedor)}
+      }
+      return Clientes.find(filtro).limit(limite).skip(offset)
     },
     getCliente: (root, {id})=>{
       return new Promise((resolve, object)=>{
@@ -26,9 +32,13 @@ export const resolvers = {
         })
       })
     },
-    totalClientes: (root) => {
+    totalClientes: (root, {vendedor}) => {
       return new Promise((resolve, object) => {
-        Clientes.countDocuments({}, (error, count) => {
+        let filtro;
+        if(vendedor){
+        filtro = {vendedor : new ObjectId(vendedor)}
+      }
+        Clientes.countDocuments(filtro, (error, count) => {
           if(error) rejects(error)
           else resolve(count)
         })
@@ -112,11 +122,50 @@ export const resolvers = {
       if(!usuarioActual){
         return null
       }
-      console.log(usuarioActual)
+      // console.log(usuarioActual)
       //Obetener el usuario actual del req
       const usuario = Usuarios.findOne({usuario: usuarioActual.usuario})
       return usuario
-    }
+    },
+    topVendedores: (root) => {
+      return new Promise((resolve, object) => {
+       Pedidos.aggregate([
+         //Se utiliza siempre con el aggregate
+         //Realiza una busqueda y nos devuelve solo los que cumplan la condicion
+           {
+             $match: {estado: "COMPLETADO"}
+           },
+           {
+             //Permite sumar los totales
+             $group: {
+               _id: "$vendedor",
+               total: {$sum: "$total"}
+             }
+           },
+           {
+             //$lookup Es como un join. Permite relacionar dos tablas
+             //En este caso pedidos con usuarios
+             $lookup: {
+                 from: "usuarios",
+                 localField: "_id",
+                 foreignField: "_id",
+                 as: "vendedor"
+             }
+           },
+           //Ordena de mayor a menor
+           {
+             $sort: {total: -1}
+           },
+           //creamos un limite de datos a traernos
+           {
+             $limit: 10
+           }         
+       ], (error, resultado) => {
+         if(error) rejects(error)
+         else resolve(resultado)
+       })
+     })
+   },
   },
   Mutation: {
     crearCliente : (root, {input}) => {
@@ -127,7 +176,8 @@ export const resolvers = {
         emails : input.emails,
         edad : input.edad,
         tipo : input.tipo,
-        pedidos : input.pedidos
+        pedidos : input.pedidos,
+        vendedor: input.vendedor
      })
      nuevoCliente.id = nuevoCliente._id
 
@@ -192,7 +242,8 @@ export const resolvers = {
         total: input.total,
         fecha: new Date(),
         cliente: input.cliente,
-        estado: "PENDIENTE"
+        estado: "PENDIENTE",
+        vendedor: input.vendedor
       })
       nuevoPedido.id = nuevoPedido._id
       return new Promise((resolve, object) => {

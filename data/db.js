@@ -4,10 +4,9 @@ import bcrypt from 'bcrypt'
 mongoose.Promise = global.Promise;
 
 mongoose.connect('mongodb://localhost/clientes', {
-  // keepAlive: true,
-  useNewUrlParser: true,
-  // reconnectTries: Number.MAX_VALUE
+  useNewUrlParser: true
 });
+mongoose.set('setFindAndModify', false)
 
 const clientesSchema = new mongoose.Schema({
   nombre: String,
@@ -16,8 +15,9 @@ const clientesSchema = new mongoose.Schema({
   emails: Array,
   edad: Number,
   tipo: String,
-  pedidos: Array
-  // totalClientes: String
+  pedidos: Array,
+  vendedor: mongoose.Types.ObjectId
+  
 });
 const Clientes = mongoose.model('clientes', clientesSchema);
 
@@ -34,7 +34,8 @@ const pedidosSchema = new mongoose.Schema({
   fecha: Date,
   //con mongoose.Types.ObjectId almacenamos como id
   cliente: mongoose.Types.ObjectId,
-  estado: String
+  estado: String,
+  vendedor: mongoose.Types.ObjectId
 })
 const Pedidos = mongoose.model('pedidos', pedidosSchema)
 
