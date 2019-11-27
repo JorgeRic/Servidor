@@ -24,6 +24,12 @@
   type Token{
     token: String!
   }
+  type Usuario{
+    usuario: String
+    id:ID
+    nombre: String
+    rol: String
+  }
   type PedidoProducto{
     id: ID
     cantidad: Int
@@ -58,6 +64,8 @@
     obtenerPedidos(cliente: String): [Pedido]
     #Graficas
     topClientes: [ClienteTotal]
+    #Usuarios
+    obtenerUsuario: Usuario
   }
   input EmailInput{
     email: String
@@ -106,6 +114,6 @@
     nuevoPedido(input: PedidoInput): Pedido
     actualizarEstado(input: PedidoInput): String
     #Usuarios
-    crearUsuario(usuario: String!, password: String!): String
+    crearUsuario(usuario: String!, nombre: String!, password: String!, rol: String!): String
     autentificarUsuario(usuario: String!, password: String!): Token
   }

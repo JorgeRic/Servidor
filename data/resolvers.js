@@ -3,15 +3,14 @@ import { Clientes, Productos, Pedidos, Usuarios } from './db'
 import { rejects } from 'assert';
 import bcrypt from 'bcrypt'
 
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
 dotenv.config({path: 'variables.env'})
 import jwt from 'jsonwebtoken';
 
 const crearToken = (usuarioLogin, secreto, expiresIn) => {
-  const {usuario} = usuarioLogin
-  return (
-    jwt.sign({usuario}, 'secreto', {expiresIn})
-    )
+  const {usuario} = usuarioLogin;
+  return jwt.sign({usuario}, secreto, {expiresIn})
+    
 }
 
 export const resolvers = {
@@ -108,6 +107,15 @@ export const resolvers = {
           else resolve(resultado)
         })
       })
+    },
+    obtenerUsuario: (root, args, {usuarioActual})=> {
+      if(!usuarioActual){
+        return null
+      }
+      console.log(usuarioActual)
+      //Obetener el usuario actual del req
+      const usuario = Usuarios.findOne({usuario: usuarioActual.usuario})
+      return usuario
     }
   },
   Mutation: {
@@ -197,7 +205,6 @@ export const resolvers = {
      actualizarEstado : (root, {input}) => {
      return new Promise((resolve, object) => {
       const {estado} = input
-      console.log(estado)
       let instruccion;
       if(estado === 'COMPLETADO'){
         instruccion = '-'
@@ -219,20 +226,21 @@ export const resolvers = {
         })
      })
     },
-    crearUsuario:async(root, {usuario, password})=> {
+    crearUsuario: async(root, {usuario, nombre, password, rol})=> {
       const existeUsuario = await Usuarios.findOne({usuario})
       if(existeUsuario){
         throw new Error('El usuario ya existe')
       }
       const nuevoUsuario = await new Usuarios({
         usuario,
-        password
+        nombre,
+        password,
+        rol
       }).save()
       return "Creado correctamente"
     },
     autentificarUsuario: async(root, {usuario, password}) => {
       const nombreUsuario = await Usuarios.findOne({usuario})
-      console.log(usuario,'hola')
       if(!nombreUsuario) {
         throw new Error('El usuario no existe')
       }
